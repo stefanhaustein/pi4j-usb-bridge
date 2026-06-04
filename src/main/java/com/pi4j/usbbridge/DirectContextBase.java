@@ -55,7 +55,6 @@ public abstract class DirectContextBase implements Context {
 
     @Override
     public Registry registry() {
-        // TODO: Support in order to keep track of IO instances to shut down...
         throw new UnsupportedOperationException();
     }
 
@@ -76,6 +75,7 @@ public abstract class DirectContextBase implements Context {
         this.runtime.shutdown();
         return this;
     }
+
 
     @Override
     public Future<Context> asyncShutdown() {
@@ -150,15 +150,9 @@ public abstract class DirectContextBase implements Context {
     @Override
     @SuppressWarnings("unchecked")
     public <I extends IO> I create(IOConfig ioConfig, IOType ioType) {
-        return (I) switch (ioType) {
-            case ANALOG_INPUT -> create((AnalogInputConfig) ioConfig);
-            case ANALOG_OUTPUT -> create((AnalogOutputConfig) ioConfig);
-            case DIGITAL_INPUT -> create((DigitalInputConfig) ioConfig);
-            case DIGITAL_OUTPUT -> create((DigitalOutputConfig) ioConfig);
-            case PWM -> create((PwmConfig) ioConfig);
-            case I2C -> create((I2CConfig) ioConfig);
-            case SPI -> create((SpiConfig) ioConfig);
-        };
+        I port = createImpl(ioConfig, ioType);
+        // Register the IO instance with the runtimeRegistry(?) for shutdown.
+        return port;
     }
 
     @Override
@@ -171,39 +165,6 @@ public abstract class DirectContextBase implements Context {
         throw new UnsupportedOperationException();
     }
 
+    abstract protected <I extends IO> I createImpl(IOConfig ioConfig, IOType ioType);
 
-    @Override
-    public AnalogOutput create(AnalogOutputConfig config) {
-        throw new UnsupportedOperationException("AnalogOutput not supported");
-    }
-
-    @Override
-    public AnalogInput create(AnalogInputConfig config) {
-        throw new UnsupportedOperationException("AnalogInput not supported");
-    }
-
-    @Override
-    public DigitalOutput create(DigitalOutputConfig config) {
-        throw new UnsupportedOperationException("DigitalOutput not supported");
-    }
-
-    @Override
-    public DigitalInput create(DigitalInputConfig config) {
-        throw new UnsupportedOperationException("DigitalInput not supported");
-    }
-
-    @Override
-    public Pwm create(PwmConfig config) {
-        throw new UnsupportedOperationException("Pwm not supported");
-    }
-
-    @Override
-    public I2C create(I2CConfig config) {
-        throw new UnsupportedOperationException("I2C not supported");
-    }
-
-    @Override
-    public Spi create(SpiConfig config) {
-        throw new UnsupportedOperationException("SPI not supported");
-    }
 }
