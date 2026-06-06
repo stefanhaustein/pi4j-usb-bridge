@@ -1,6 +1,7 @@
 package com.pi4j.usbbridge.mcp2221;
 
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 import com.pi4j.io.IO;
 import com.pi4j.io.IOConfig;
@@ -14,8 +15,7 @@ import com.pi4j.usbbridge.DirectContextBase;
 
 public class Mcp2221 extends DirectContextBase {
     final HidDevice device;
-    final byte[] sendBuffer = new byte[64];
-    final byte[] receiveBuffer = new byte[64];
+    final byte[] transferBuffer = new byte[64];
     final IO[] openIOs = new IO[4];
 
     static HidDevice findMcp2221() {
@@ -35,80 +35,75 @@ public class Mcp2221 extends DirectContextBase {
     // TODO: Support multiple devices
     public Mcp2221() {
         device = findMcp2221();
-        System.out.println("Found I2C device: " + device);
         device.open();
-
-        byte[] request = new byte[64];
-        byte[] response = new byte[64];
-        request[0] = 0x10;
-
-        device.write(request, 64, (byte) 0);
-        device.read(response);
-
-        System.out.println("MCP2221 Configuration: " + Arrays.toString(response));
-
-        // TODO: Query and change on demand only; consider changing back after shutdown.
-        setGpioConfiguration(Mcp2221.PinMode.GPIO, Mcp2221.PinMode.GPIO, Mcp2221.PinMode.GPIO, Mcp2221.PinMode.GPIO);
     }
 
-    void prepareBuffer(int command) {
-        Arrays.fill(sendBuffer, (byte) 0);
-        sendBuffer[0] = (byte) command;
-    }
-
-    void transfer() {
-        device.write(sendBuffer, 64, (byte) 0);
-        device.read(receiveBuffer);
-    }
-
-    void setGpioConfiguration(PinMode mode0, PinMode mode1, PinMode mode2, PinMode mode3) {
-        prepareBuffer(0x60);
-        sendBuffer[7] = (byte) 0b1000_0000;
-        sendBuffer[8] = (byte) mode0.ordinal();
-        sendBuffer[9] = (byte) mode1.ordinal();
-        sendBuffer[1] = (byte) mode2.ordinal();
-        sendBuffer[11] = (byte) mode3.ordinal();
-        transfer();
-        if (receiveBuffer[0] != 0x60 || receiveBuffer[1] != 0) {
-            throw new IllegalStateException("Failed to set GPIO config");
+    void transfer(int commandCode, Consumer<byte[]>  input, Consumer<byte[]> output) {
+        synchronized (lock) {
+            Arrays.fill(transferBuffer, (byte) 0);
+            transferBuffer[0] = (byte) commandCode;
+            if (input != null) {
+                input.accept(transferBuffer);
+            }
+            device.write(transferBuffer, 64, (byte) 0);
+            device.read(transferBuffer);
+            if (output != null) {
+                output.accept(transferBuffer);
+            }
         }
-        System.out.println("GPIO config result: " + Arrays.toString(receiveBuffer));
     }
+
+    void send(int commandCode, Consumer<byte[]> input) {
+        transfer(commandCode, input, null);
+    }
+
+    void receive(int commandCode, Consumer<byte[]> output) {
+        transfer(commandCode, null, output);
+    }
+
+    void setGpioConfiguration(int pin, PinMode mode) {
+        byte[] modes = new byte[4];
+        receive(Command.GET_SRAM_SETTINGS,
+                receivedBuffer -> {
+                    System.arraycopy(receivedBuffer, 22, modes, 0, 4);
+                });
+
+        modes[pin] = (byte) mode.ordinal();
+
+        send(Command.SET_SRAM_SETTINGS,
+            sendBuffer -> {
+                sendBuffer[7] = (byte) 0b1000_0000;
+                System.arraycopy(modes, 0, sendBuffer, 8, 4);
+            });
+    }
+
 
     void setGpioDirection(int pin, GpioDirection direction) {
-        prepareBuffer(0x50);
-        sendBuffer[4 * pin + 4] = 1;
-        sendBuffer[4 * pin + 5] = (byte) direction.ordinal();
-        transfer();
-        if (receiveBuffer[0] != 0x50 || receiveBuffer[1] != 0) {
-            throw new IllegalStateException("Failed to set GPIO direction");
-        }
-        System.out.println("setGpioDirection result: " + Arrays.toString(receiveBuffer));
+        send(Command.SET_GPIO_OUTPUT_VALUES, sendBuffer -> {
+            sendBuffer[4 * pin + 4] = 1;
+            sendBuffer[4 * pin + 5] = (byte) direction.ordinal();
+        });
     }
 
     void setGpioValue(int pin, boolean value) {
-        prepareBuffer(0x50);
-        sendBuffer[4 * pin + 2] = 1;
-        sendBuffer[4 * pin + 3] = value ? (byte) 1 : (byte) 0;
-        transfer();
-        if (receiveBuffer[0] != 0x50 || receiveBuffer[1] != 0) {
-            throw new IllegalStateException("Failed to set GPIO value");
-        }
-        System.out.println("setGpioDirection result: " + Arrays.toString(receiveBuffer));
+        send(Command.SET_GPIO_OUTPUT_VALUES, sendBuffer -> {
+            sendBuffer[4 * pin + 2] = 1;
+            sendBuffer[4 * pin + 3] = value ? (byte) 1 : (byte) 0;
+        });
     }
 
 
     @Override
     public I2C create(I2CConfig config) {
-        return new I2CImpl(this, config);
+        return new Mcp2221I2C(this, config);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     protected IO createImpl(IOConfig ioConfig, IOType ioType) {
         return switch (ioType) {
-            case I2C -> new I2CImpl(this, (I2CConfig) ioConfig);
-            case DIGITAL_OUTPUT -> new DigitalOutputImpl(this, (DigitalOutputConfig) ioConfig);
+            case I2C -> new Mcp2221I2C(this, (I2CConfig) ioConfig);
+            case DIGITAL_OUTPUT -> new Mcp2221DigitalOutput(this, (DigitalOutputConfig) ioConfig);
             // TODO: Add Digital IO based on gpio methods.
             default -> throw new UnsupportedOperationException("Unsupported IO type: " + ioType);
         };

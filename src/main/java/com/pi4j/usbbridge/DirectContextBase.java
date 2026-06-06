@@ -1,12 +1,9 @@
 package com.pi4j.usbbridge;
 
 import com.pi4j.boardinfo.model.BoardInfo;
-import com.pi4j.config.Config;
 import com.pi4j.context.Context;
-import com.pi4j.context.ContextBuilder;
 import com.pi4j.context.ContextConfig;
 import com.pi4j.context.ContextProperties;
-import com.pi4j.context.impl.DefaultContextProperties;
 import com.pi4j.event.InitializedEvent;
 import com.pi4j.event.InitializedListener;
 import com.pi4j.event.ShutdownEvent;
@@ -22,13 +19,8 @@ import com.pi4j.io.exception.IOShutdownException;
 import com.pi4j.platform.Platforms;
 import com.pi4j.provider.Providers;
 import com.pi4j.registry.Registry;
-import com.pi4j.runtime.Runtime;
-import com.pi4j.runtime.impl.DefaultRuntime;
-import com.pi4j.util.ExecutorPool;
 
-import java.lang.module.Configuration;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -39,38 +31,13 @@ import java.util.concurrent.Future;
  */
 public abstract class DirectContextBase implements Context {
     protected final Object lock = new Object();
-    protected final Map<String, IO> openIOs = new HashMap<>();
     protected final List<InitializedListener> initializedListeners = new ArrayList<>();
     protected final List<ShutdownListener> shutdownListeners = new ArrayList<>();
     protected final ExecutorService executorService = Executors.newCachedThreadPool() ;
+    protected final Map<String, IO> openIOs = new HashMap<>();
 
 
     private boolean isShutdown = false;
-
-    @Override
-    public ContextConfig config() {
-       throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ContextProperties properties() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Providers providers() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Registry registry() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Platforms platforms() {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public Future<?> submitTask(Runnable task) {
@@ -229,5 +196,32 @@ public abstract class DirectContextBase implements Context {
 
     /** This should be the "main" (only?) thing to be implemented by concrete subclasses. */
     abstract protected <I extends IO> I createImpl(IOConfig ioConfig, IOType ioType);
+
+
+
+    @Override
+    public ContextConfig config() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ContextProperties properties() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Providers providers() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Registry registry() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Platforms platforms() {
+        throw new UnsupportedOperationException();
+    }
 
 }

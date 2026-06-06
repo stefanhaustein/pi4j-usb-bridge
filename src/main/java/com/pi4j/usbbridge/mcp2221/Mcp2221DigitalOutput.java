@@ -3,12 +3,12 @@ package com.pi4j.usbbridge.mcp2221;
 import com.pi4j.context.Context;
 import com.pi4j.io.gpio.digital.*;
 
-class DigitalOutputImpl extends DigitalOutputBase {
+class Mcp2221DigitalOutput extends DigitalOutputBase {
 
     private final Mcp2221 bridge;
     private final int pin;
 
-    public DigitalOutputImpl(Mcp2221 bridge, DigitalOutputConfig config) {
+    public Mcp2221DigitalOutput(Mcp2221 bridge, DigitalOutputConfig config) {
         super(null, config);
         this.bridge = bridge;
         // bridge.checkConflictingConfig(config);
@@ -19,6 +19,7 @@ class DigitalOutputImpl extends DigitalOutputBase {
         if (bridge.openIOs[pin] != null) {
             throw new IllegalStateException("Pin " + pin + " is already in use");
         }
+        bridge.setGpioConfiguration(pin, Mcp2221.PinMode.GPIO);
         bridge.setGpioDirection(pin, Mcp2221.GpioDirection.OUTPUT);
     }
 
