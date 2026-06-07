@@ -1,4 +1,4 @@
-package com.pi4j.usbbridge;
+package com.pi4j.bridge;
 
 import com.pi4j.boardinfo.model.BoardInfo;
 import com.pi4j.context.Context;

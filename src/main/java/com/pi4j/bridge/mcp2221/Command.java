@@ -1,4 +1,4 @@
-package com.pi4j.usbbridge.mcp2221;
+package com.pi4j.bridge.mcp2221;
 
 class Command {
     static final byte GET_GPIO_VALUES = (byte) 0x51;

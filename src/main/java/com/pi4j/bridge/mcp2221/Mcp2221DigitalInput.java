@@ -1,18 +1,16 @@
-package com.pi4j.usbbridge.mcp2221;
+package com.pi4j.bridge.mcp2221;
 
 import com.pi4j.context.Context;
 import com.pi4j.io.gpio.digital.*;
 
-class Mcp2221DigitalOutput extends DigitalOutputBase {
-
+public class Mcp2221DigitalInput extends DigitalInputBase {
     private final Mcp2221 bridge;
     private final int pin;
 
-    public Mcp2221DigitalOutput(Mcp2221 bridge, DigitalOutputConfig config) {
+    public Mcp2221DigitalInput(Mcp2221 bridge, DigitalInputConfig config) {
         super(null, config);
         this.bridge = bridge;
-        // bridge.checkConflictingConfig(config);
-        pin = config.getBcm();
+        this.pin = config.getBcm();
         if (pin < 0 || pin > 3) {
             throw new IllegalArgumentException("Invalid pin number: " + pin);
         }
@@ -24,17 +22,14 @@ class Mcp2221DigitalOutput extends DigitalOutputBase {
     }
 
     @Override
-    public DigitalOutput state(DigitalState state) {
-        super.state(state);
-        bridge.setGpioValue(pin, state.isHigh());
-        return this;
+    public DigitalState state() {
+        return null;
     }
 
     @Override
-    public DigitalOutput shutdownInternal(Context context) {
+    public DigitalInput shutdownInternal(Context context) {
         super.shutdownInternal(context);
         bridge.openIOs[pin] = null;
         return this;
     }
-
 }

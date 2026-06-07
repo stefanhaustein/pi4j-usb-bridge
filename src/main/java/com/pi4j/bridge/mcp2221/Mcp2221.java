@@ -1,4 +1,4 @@
-package com.pi4j.usbbridge.mcp2221;
+package com.pi4j.bridge.mcp2221;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
@@ -11,7 +11,7 @@ import com.pi4j.io.i2c.I2C;
 import com.pi4j.io.i2c.I2CConfig;
 import org.hid4java.*;
 
-import com.pi4j.usbbridge.DirectContextBase;
+import com.pi4j.bridge.DirectContextBase;
 
 public class Mcp2221 extends DirectContextBase {
     final HidDevice device;

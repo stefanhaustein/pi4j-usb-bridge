@@ -1,4 +1,4 @@
-package com.pi4j.usbbridge.mcp2221;
+package com.pi4j.bridge.mcp2221;
 
 import com.pi4j.io.i2c.*;
 
